@@ -77,3 +77,7 @@ A pesquisa será iniciada para o cliente, e o agente já pode encerrar sua parte
 <div align="center">
   <img src="src/dashboard-survey.png" alt="pagina_dashboard_survey">
 </div>
+---
+<div align="center">
+  <img src="src/webhook-survey.png" alt="pagina_webhook_survey">
+</div>
