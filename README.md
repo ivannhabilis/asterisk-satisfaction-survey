@@ -42,8 +42,8 @@ Para uma instalação correta, o repositório deve ter a seguinte estrutura:
 1.  **Clone o Repositório:**
     Conecte-se ao seu servidor PABX via SSH e clone este repositório.
     ```bash
-    git clone URL_DO_SEU_REPOSITORIO_NO_GITHUB
-    cd nome-do-repositorio
+    git clone https://github.com/ivannhabilis/asterisk-satisfaction-survey.git
+    cd asterisk-satisfaction-survey
     ```
 
 2.  **Torne o Script Executável:**
