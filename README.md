@@ -74,3 +74,6 @@ A utilização do sistema é extremamente simples para o agente:
     ```
 A pesquisa será iniciada para o cliente, e o agente já pode encerrar sua parte da chamada.
 
+<div align="center">
+  <img src="src/dashboard-survey.png" alt="pagina_dashboard_survey">
+</div>
