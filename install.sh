@@ -259,14 +259,17 @@ read -r -d '' DIALPLAN_CONTENT <<'EOF'
 ; --- INÍCIO: SISTEMA DE PESQUISA POR TRANSFERÊNCIA (Adicionado por script) ---
 ; ==============================================================================
 [from-internal-custom]
-exten => *777,1,NoOp(--- Recebida transferência para Pesquisa de Satisfação ---)
+exten => _*777!,1,NoOp(--- Recebida transferência para Pesquisa de Satisfação ---)
 same => n,Answer()
 same => n,Wait(1)
+same => n,Set(AGENT_EXTEN=${EXTEN:4})
 same => n,Read(SURVEY_SCORE,custom/pesquisa-boas-vindas,1,,3,5)
-same => n,If($["${READSTATUS}" != "OK"]?Hangup())
+same => n,GotoIf($["${READSTATUS}" != "OK"]?Hangup())
 same => n,GotoIf($[${SURVEY_SCORE} < 1 | ${SURVEY_SCORE} > 5]?invalid)
-same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${TRANSFERER(callerid)},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
-same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${TRANSFERER(callerid)}" "${CALLERID(num)}" &)
+;same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${TRANSFERER(callerid)},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
+;same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${TRANSFERER(callerid)}" "${CALLERID(num)}" &)
+same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${AGENT_EXTEN},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
+same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${AGENT_EXTEN}" "${CALLERID(num)}" &)
 same => n,Playback(custom/pesquisa-agradecimento)
 same => n,Hangup()
 same => n(invalid),Playback(custom/pesquisa-opcao-invalida)
