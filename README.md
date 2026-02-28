@@ -4,6 +4,8 @@ Este projeto implementa uma solução completa e confiável de pesquisa de satis
 
 Esta abordagem garante controle total ao agente, se integra de forma simples e robusta ao fluxo de chamadas e captura os dados essenciais para a avaliação do atendimento.
 
+---
+
 ## Funcionalidades Principais
 
 - **URA de Pesquisa por Transferência:** Agente transfere a chamada para o ramal `*777` para iniciar a pesquisa.
@@ -72,8 +74,7 @@ A utilização do sistema é extremamente simples para o agente:
 1.  Atenda uma chamada de cliente normalmente.
 2.  Ao final da conversa, informe ao cliente que ele será transferido para uma breve pesquisa.
 3.  Use a função de **transferência** do seu softphone ou telefone IP e transfira a chamada para o ramal:
-    `     *777
-    `
+    `    *777`
     A pesquisa será iniciada para o cliente, e o agente já pode encerrar sua parte da chamada.
 
 <div align="center">
