@@ -86,5 +86,3 @@ A utilização do sistema é extremamente simples para o agente:
 <div align="center">
   <img src="src/webhook-survey.png" alt="pagina_webhook_survey">
 </div>
-
----
