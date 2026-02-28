@@ -10,11 +10,11 @@ Esta abordagem garante controle total ao agente, se integra de forma simples e r
 - **Armazenamento Local:** Os resultados são salvos em um arquivo CSV simplificado.
 - **Integração com Webhook:** Envia os dados da pesquisa em tempo real para uma URL externa em formato JSON.
 - **Dashboard Web Integrado:** Um módulo para o painel do FreePBX permite:
-    - Visualizar os resultados em uma tabela interativa com **paginação, busca e ordenação**.
-    - Analisar a **nota média por agente** através de um gráfico de barras.
-    - Gerenciar a **URL do webhook** sem precisar de acesso SSH.
-    - **Exportar** todos os dados para um arquivo CSV.
-    - **Limpar** todo o histórico de dados com um clique.
+  - Visualizar os resultados em uma tabela interativa com **paginação, busca e ordenação**.
+  - Analisar a **nota média por agente** através de um gráfico de barras.
+  - Gerenciar a **URL do webhook** sem precisar de acesso SSH.
+  - **Exportar** todos os dados para um arquivo CSV.
+  - **Limpar** todo o histórico de dados com um clique.
 
 ---
 
@@ -41,18 +41,21 @@ Para uma instalação correta, o repositório deve ter a seguinte estrutura:
 
 1.  **Clone o Repositório:**
     Conecte-se ao seu servidor PABX via SSH e clone este repositório.
+
     ```bash
     git clone https://github.com/ivannhabilis/asterisk-satisfaction-survey.git
     cd asterisk-satisfaction-survey
     ```
 
 2.  **Torne o Script Executável:**
+
     ```bash
     chmod +x install.sh
     ```
 
 3.  **Execute a Instalação:**
     O script fará todo o trabalho de criação de arquivos, configuração do dialplan, cópia dos áudios e instalação do módulo web.
+
     ```bash
     sudo ./install.sh
     ```
@@ -69,10 +72,9 @@ A utilização do sistema é extremamente simples para o agente:
 1.  Atenda uma chamada de cliente normalmente.
 2.  Ao final da conversa, informe ao cliente que ele será transferido para uma breve pesquisa.
 3.  Use a função de **transferência** do seu softphone ou telefone IP e transfira a chamada para o ramal:
-    ```
-    *777
-    ```
-A pesquisa será iniciada para o cliente, e o agente já pode encerrar sua parte da chamada.
+    `     *777
+    `
+    A pesquisa será iniciada para o cliente, e o agente já pode encerrar sua parte da chamada.
 
 <div align="center">
   <img src="src/dashboard-survey.png" alt="pagina_dashboard_survey">
@@ -83,3 +85,5 @@ A pesquisa será iniciada para o cliente, e o agente já pode encerrar sua parte
 <div align="center">
   <img src="src/webhook-survey.png" alt="pagina_webhook_survey">
 </div>
+
+---
