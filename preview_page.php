@@ -42,21 +42,35 @@ $agent_data = [];
 $all_rows = [];
 
 if (file_exists($survey_csv_file) && is_readable($survey_csv_file)) {
-    if (($handle = fopen($survey_csv_file, "r")) !== FALSE) {
-        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            if (!empty($data)) {
-                $all_rows[] = $data;
-            }
+    $lines = file($survey_csv_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines !== false && count($lines) > 0) {
+        $first = ltrim($lines[0], "\xEF\xBB\xBF");
+        $commaCount = substr_count($first, ',');
+        $semiCount = substr_count($first, ';');
+        $delimiter = ($semiCount > $commaCount) ? ';' : ',';
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') { continue; }
+            $line = ltrim($line, "\xEF\xBB\xBF");
+            $data = str_getcsv($line, $delimiter);
+            if (!empty($data)) { $all_rows[] = $data; }
         }
-        fclose($handle);
     }
 }
 
 foreach ($all_rows as $data) {
-    if (isset($data[3], $data[4]) && trim($data[3]) !== '' && is_numeric(trim($data[4]))) {
+    // Esperamos 6 campos: 0=data,1=hora,2=origem,3=ramal,4=nome_ramal,5=nota
+    if (isset($data[3], $data[5]) && trim($data[3]) !== '' && is_numeric(trim($data[5]))) {
         $agent_exten = htmlspecialchars(trim($data[3]));
-        $score = intval(trim($data[4]));
-        if (!isset($agent_data[$agent_exten])) { $agent_data[$agent_exten] = ['total_score' => 0, 'count' => 0]; }
+        $agent_name = (isset($data[4]) && trim($data[4]) !== '') ? htmlspecialchars(trim($data[4])) : '';
+        $score = intval(trim($data[5]));
+        if (!isset($agent_data[$agent_exten])) {
+            $agent_data[$agent_exten] = ['total_score' => 0, 'count' => 0, 'name' => $agent_name];
+        }
+        // se não tivermos nome ainda, preenche com o primeiro encontrado
+        if (empty($agent_data[$agent_exten]['name']) && $agent_name !== '') {
+            $agent_data[$agent_exten]['name'] = $agent_name;
+        }
         $agent_data[$agent_exten]['total_score'] += $score;
         $agent_data[$agent_exten]['count']++;
     }
@@ -65,7 +79,8 @@ foreach ($all_rows as $data) {
 $agent_chart_labels = []; $agent_chart_averages = [];
 foreach ($agent_data as $agent => $data) {
     if ($data['count'] > 0) {
-        $agent_chart_labels[] = "Ramal " . $agent;
+        $label = (!empty($data['name'])) ? $data['name'] : ("Ramal " . $agent);
+        $agent_chart_labels[] = $label;
         $agent_chart_averages[] = round($data['total_score'] / $data['count'], 2);
     }
 }

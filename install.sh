@@ -113,10 +113,12 @@ if (file_exists($survey_csv_file) && is_readable($survey_csv_file)) {
 }
 
 foreach ($all_rows as $data) {
-    if (isset($data[3], $data[4]) && trim($data[3]) !== '' && is_numeric(trim($data[4]))) {
+    if (isset($data[3], $data[5]) && trim($data[3]) !== '' && is_numeric(trim($data[5]))) {
         $agent_exten = htmlspecialchars(trim($data[3]));
-        $score = intval(trim($data[4]));
-        if (!isset($agent_data[$agent_exten])) { $agent_data[$agent_exten] = ['total_score' => 0, 'count' => 0]; }
+        $agent_name = (isset($data[4])) ? htmlspecialchars(trim($data[4])) : '';
+        $score = intval(trim($data[5]));
+        if (!isset($agent_data[$agent_exten])) { $agent_data[$agent_exten] = ['total_score' => 0, 'count' => 0, 'name' => $agent_name]; }
+        if (empty($agent_data[$agent_exten]['name']) && $agent_name !== '') { $agent_data[$agent_exten]['name'] = $agent_name; }
         $agent_data[$agent_exten]['total_score'] += $score;
         $agent_data[$agent_exten]['count']++;
     }
@@ -125,7 +127,7 @@ foreach ($all_rows as $data) {
 $agent_chart_labels = []; $agent_chart_averages = [];
 foreach ($agent_data as $agent => $data) {
     if ($data['count'] > 0) {
-        $agent_chart_labels[] = "Ramal " . $agent;
+        $agent_chart_labels[] = ($data['name'] !== '') ? $data['name'] : "Ramal " . $agent;
         $agent_chart_averages[] = round($data['total_score'] / $data['count'], 2);
     }
 }
@@ -274,7 +276,7 @@ same => n,Answer()
 same => n,Wait(1)
 same => n,Read(SURVEY_SCORE,custom/pesquisa-boas-vindas,1,,3,5)
 same => n,GotoIf($["${READSTATUS}" != "OK"]?hangup,1)
-same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${RAMAL_LIMPO},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
+same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${RAMAL_LIMPO},${NOME_BRUTO},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
 same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${RAMAL_LIMPO}" "${CALLERID(num)}" &)
 same => n,Playback(custom/pesquisa-agradecimento)
 same => n,Hangup()
