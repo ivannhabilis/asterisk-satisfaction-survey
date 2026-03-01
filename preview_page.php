@@ -36,47 +36,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 }
-
+// 1. CONFIGURAÇÕES INICIAIS
 $current_webhook_url = file_exists(__DIR__ . '/webhook_url.conf') ? file_get_contents(__DIR__ . '/webhook_url.conf') : '';
 $agent_data = [];
-$all_rows = [];
+$all_rows = []; 
 
+// 2. LEITURA EFICIENTE (STREAMING)
 if (file_exists($survey_csv_file) && is_readable($survey_csv_file)) {
-    $lines = file($survey_csv_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lines !== false && count($lines) > 0) {
-        $first = ltrim($lines[0], "\xEF\xBB\xBF");
-        $commaCount = substr_count($first, ',');
-        $semiCount = substr_count($first, ';');
-        $delimiter = ($semiCount > $commaCount) ? ';' : ',';
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '') { continue; }
-            $line = ltrim($line, "\xEF\xBB\xBF");
-            $data = str_getcsv($line, $delimiter);
-            if (!empty($data)) { $all_rows[] = $data; }
+    $handle = fopen($survey_csv_file, 'r');
+    if ($handle !== false) {
+        // Tenta detectar o delimitador na primeira linha
+        $firstLine = fgets($handle);
+        $delimiter = (substr_count($firstLine, ';') > substr_count($firstLine, ',')) ? ';' : ',';
+        rewind($handle); // Volta para o início do arquivo após testar a primeira linha
+
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            // Processamento para as Médias (Gráfico)
+            if (isset($data[3], $data[5]) && is_numeric(trim($data[5]))) {
+                $agent_exten = htmlspecialchars(trim($data[3]));
+                $agent_name = (isset($data[4]) && trim($data[4]) !== '') ? htmlspecialchars(trim($data[4])) : '';
+                $score = intval(trim($data[5]));
+
+                if (!isset($agent_data[$agent_exten])) {
+                    $agent_data[$agent_exten] = ['total_score' => 0, 'count' => 0, 'name' => $agent_name];
+                }
+                if (empty($agent_data[$agent_exten]['name']) && $agent_name !== '') {
+                    $agent_data[$agent_exten]['name'] = $agent_name;
+                }
+                
+                $agent_data[$agent_exten]['total_score'] += $score;
+                $agent_data[$agent_exten]['count']++;
+            }
+
+            // Armazenamento para a Tabela (Limitei a 500 para não travar o navegador)
+            $all_rows[] = $data;
+            if (count($all_rows) > 500) { array_shift($all_rows); }
         }
+        fclose($handle);
     }
 }
 
-foreach ($all_rows as $data) {
-    // Esperamos 6 campos: 0=data,1=hora,2=origem,3=ramal,4=nome_ramal,5=nota
-    if (isset($data[3], $data[5]) && trim($data[3]) !== '' && is_numeric(trim($data[5]))) {
-        $agent_exten = htmlspecialchars(trim($data[3]));
-        $agent_name = (isset($data[4]) && trim($data[4]) !== '') ? htmlspecialchars(trim($data[4])) : '';
-        $score = intval(trim($data[5]));
-        if (!isset($agent_data[$agent_exten])) {
-            $agent_data[$agent_exten] = ['total_score' => 0, 'count' => 0, 'name' => $agent_name];
-        }
-        // se não tivermos nome ainda, preenche com o primeiro encontrado
-        if (empty($agent_data[$agent_exten]['name']) && $agent_name !== '') {
-            $agent_data[$agent_exten]['name'] = $agent_name;
-        }
-        $agent_data[$agent_exten]['total_score'] += $score;
-        $agent_data[$agent_exten]['count']++;
-    }
-}
+// 3. PREPARAÇÃO DOS DADOS PARA O GRÁFICO
+$agent_chart_labels = []; 
+$agent_chart_averages = [];
 
-$agent_chart_labels = []; $agent_chart_averages = [];
 foreach ($agent_data as $agent => $data) {
     if ($data['count'] > 0) {
         $label = (!empty($data['name'])) ? $data['name'] : ("Ramal " . $agent);
