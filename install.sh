@@ -45,13 +45,13 @@ echo -e "${C_BLUE}=====================================================${C_NC}"
 read -r -d '' XML_CONTENT <<'EOF'
 <module>
     <rawname>pesquisasatisfacao</rawname>
-    <name>Pesquisa de Satisfação</name>
+    <name>Satisfaction Survey</name>
     <version>3.0.0</version>
     <type>tool</type>
     <category>Reports</category>
-    <description>Dashboard para a pesquisa de satisfação por transferência.</description>
+    <description>Dashboard for satisfaction survey via transfer.</description>
     <menuitems>
-        <pesquisasatisfacao>Pesquisa de Satisfação</pesquisasatisfacao>
+        <pesquisasatisfacao>Satisfaction Survey</pesquisasatisfacao>
     </menuitems>
 </module>
 EOF
@@ -137,7 +137,7 @@ foreach ($agent_data as $agent => $data) {
 <script type="text/javascript" src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<h2>Dashboard da Pesquisa de Satisfação</h2>
+<h2>Satisfaction Survey Dashboard</h2>
 <?php echo $message; ?>
 
 <div class="container-fluid">
@@ -147,7 +147,7 @@ foreach ($agent_data as $agent => $data) {
                 <div class="display full-border">
                     <div class="section-title"><h3><i class="fa fa-pie-chart"></i> Análise Gráfica</h3></div>
                     <div class="container-fluid"><div class="row"><div class="col-md-6">
-                        <h4>Nota Média por Agente</h4>
+                        <h4>Nota Média por Ramal</h4>
                         <canvas id="agentChart"></canvas>
                     </div></div></div>
                     <hr>
@@ -176,18 +176,19 @@ foreach ($agent_data as $agent => $data) {
                             <ul>
                                 <li><strong>Data e Hora:</strong> Quando a pesquisa foi respondida.</li>
                                 <li><strong>Origem:</strong> O número de telefone (Caller ID) do cliente.</li>
-                                <li><strong>Agente:</strong> O ramal do agente que transferiu a chamada para a pesquisa.</li>
+                                <li><strong>Ramal:</strong> O ramal do ramal que transferiu a chamada para a pesquisa.</li>
+                                <li><strong>Nome do ramal:</strong> O nome completo do ramal, se disponível no CSV.</li>
                                 <li><strong>Nota:</strong> A nota de 1 a 5 fornecida pelo cliente.</li>
                             </ul>
                         </div>
                         <table id="surveyTable" class="table table-striped table-bordered" style="width:100%">
-                            <thead><tr><th>Data</th><th>Hora</th><th>Origem</th><th>Agente</th><th>Nota</th></tr></thead>
+                            <thead><tr><th>Data</th><th>Hora</th><th>Origem</th><th>Ramal</th><th>Nome do ramal</th><th>Nota</th></tr></thead>
                             <tbody>
                                 <?php
                                 $reversed_rows = array_reverse($all_rows);
                                 foreach ($reversed_rows as $data) {
                                     echo "<tr>";
-                                    for ($i=0; $i < 5; $i++) { echo "<td>" . (isset($data[$i]) ? htmlspecialchars($data[$i]) : '') . "</td>"; }
+                                    for ($i=0; $i < 6; $i++) { echo "<td>" . (isset($data[$i]) ? htmlspecialchars($data[$i]) : '') . "</td>"; }
                                     echo "</tr>";
                                 }
                                 ?>
@@ -211,7 +212,7 @@ $(document).ready(function() {
             data: {
                 labels: agentLabels,
                 datasets: [{
-                    label: 'Nota Média',
+                    label: 'Average Score',
                     data: agentAverages,
                     backgroundColor: 'rgba(54, 162, 235, 0.5)',
                     borderColor: 'rgba(54, 162, 235, 1)',
@@ -231,7 +232,7 @@ EOF
 read -r -d '' WEBHOOK_SCRIPT_CONTENT <<'EOF'
 #!/bin/bash
 SURVEY_SCORE="$1"
-AGENT_EXTEN="$2"
+RAMAL_LIMPO="$2"
 CALLERIDNUM="$3"
 
 WEBHOOK_URL=$(cat /etc/asterisk/webhook_url.conf)
@@ -239,7 +240,7 @@ WEBHOOK_URL=$(cat /etc/asterisk/webhook_url.conf)
 if [ -n "${WEBHOOK_URL}" ]; then
     JSON_PAYLOAD=$(cat <<JSON
     {
-      "agente_ramal": "${AGENT_EXTEN}",
+      "ramal": "${RAMAL_LIMPO}",
       "data": "$(date +'%Y-%m-%d')",
       "hora": "$(date +'%H:%M:%S')",
       "origem": "${CALLERIDNUM}",
@@ -255,29 +256,35 @@ EOF
 # Dialplan a ser adicionado
 read -r -d '' DIALPLAN_CONTENT <<'EOF'
 
-; ==============================================================================
+; ===========================================================================
 ; --- INÍCIO: SISTEMA DE PESQUISA POR TRANSFERÊNCIA (Adicionado por script) ---
-; ==============================================================================
+; ===========================================================================
 [from-internal-custom]
-exten => _*777!,1,NoOp(--- Recebida transferência para Pesquisa de Satisfação ---)
+; exten => _*777!,1,NoOp(--- Recebida transferência para Pesquisa de Satisfação ---)
+exten => _*777,1,NoOp(--- Recebida transferencia para Pesquisa de Satisfação ---)
+same => n,Set(RAMAL_LIMPO=${CUT(CUT(BLINDTRANSFER,/,2),-,1)})
+same => n,Set(NOME_BRUTO=${DB(AMPUSER/${RAMAL_LIMPO}/cidname)})
+same => n,Verbose(1, EXTEN original: ${RAMAL_LIMPO})
+same => n,Verbose(1, Canal: ${BRIDGEPEER})
+same => n,Verbose(1, Chamada transferida por: ${TRANSFER_FROM})
+;same => n,Set(AGENT_EXTEN=${EXTEN:4})
+same => n,Verbose(1, BLINDTRANSFER após substring: ${RAMAL_LIMPO})
+same => n,NoOp(Ramal do ${NOME_BRUTO} que transferiu identificado como: ${RAMAL_LIMPO})
 same => n,Answer()
 same => n,Wait(1)
-same => n,Set(AGENT_EXTEN=${EXTEN:4})
 same => n,Read(SURVEY_SCORE,custom/pesquisa-boas-vindas,1,,3,5)
-same => n,GotoIf($["${READSTATUS}" != "OK"]?Hangup())
-same => n,GotoIf($[${SURVEY_SCORE} < 1 | ${SURVEY_SCORE} > 5]?invalid)
-;same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${TRANSFERER(callerid)},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
-;same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${TRANSFERER(callerid)}" "${CALLERID(num)}" &)
-same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${AGENT_EXTEN},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
-same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${AGENT_EXTEN}" "${CALLERID(num)}" &)
+same => n,GotoIf($["${READSTATUS}" != "OK"]?hangup,1)
+same => n,System(echo "${STRFTIME(${EPOCH},,%Y-%m-%d)},${STRFTIME(${EPOCH},,%H:%M:%S)},${CALLERID(num)},${RAMAL_LIMPO},${SURVEY_SCORE}" >> /var/log/asterisk/survey_results.csv)
+same => n,System(/var/lib/asterisk/agi-bin/send_survey_webhook.sh "${SURVEY_SCORE}" "${RAMAL_LIMPO}" "${CALLERID(num)}" &)
 same => n,Playback(custom/pesquisa-agradecimento)
 same => n,Hangup()
-same => n(invalid),Playback(custom/pesquisa-opcao-invalida)
+exten => invalid,1,Playback(custom/pesquisa-opcao-invalida)
 same => n,Hangup()
+exten => h,1,Hangup()
 
-; ==============================================================================
+; ===========================================================================
 ; --- FIM: SISTEMA DE PESQUISA POR TRANSFERÊNCIA ---
-; ==============================================================================
+; ===========================================================================
 EOF
 
 # --- Início do Processo de Instalação ---
@@ -336,5 +343,5 @@ echo -e "\n${C_GREEN}=====================================================${C_NC
 echo -e "${C_GREEN}  INSTALAÇÃO CONCLUÍDA COM SUCESSO!                 ${C_NC}"
 echo -e "${C_GREEN}=====================================================${C_NC}"
 echo -e "\n${C_YELLOW}PRÓXIMOS PASSOS:${C_NC}"
-echo -e "1. Acesse a interface web em ${C_BLUE}Reports -> Pesquisa de Satisfação${C_NC} para configurar o webhook."
+echo -e "1. Acesse a interface web em ${C_BLUE}Reports -> Satisfaction Survey${C_NC} para configurar o webhook."
 echo -e "2. Para usar, transfira uma chamada para o ramal ${C_BLUE}*777${C_NC}."
