@@ -135,6 +135,7 @@ foreach ($agent_data as $agent => $data) {
                                 <li><strong>Data e Hora:</strong> Quando a pesquisa foi respondida.</li>
                                 <li><strong>Origem:</strong> O número de telefone (Caller ID) do cliente.</li>
                                 <li><strong>Ramal:</strong> O ramal que transferiu a chamada para a pesquisa.</li>
+                                <li><strong>Nome do Ramal:</strong> O nome do ramal que transferiu a chamada para a pesquisa.</li>
                                 <li><strong>Nota:</strong> A nota de 1 a 5 fornecida pelo cliente.</li>
                             </ul>
                         </div>
