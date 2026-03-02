@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // 1. CONFIGURAÇÕES INICIAIS
-$current_webhook_url = file_exists(__DIR__ . '/webhook_url.conf') ? file_get_contents(__DIR__ . '/webhook_url.conf') : '';
+$current_webhook_url = file_exists('/etc/asterisk/webhook_url.conf') ? file_get_contents('/etc/asterisk/webhook_url.conf') : '';
 $agent_data = [];
 $all_rows = []; 
 
